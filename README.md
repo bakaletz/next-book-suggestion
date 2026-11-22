@@ -53,7 +53,12 @@ Response:
 }
 ```
 
-Invalid requests return `400`.
+Recommendations are popular books the user has not read: books from `recentBooks` and duplicates are removed from the model answer, and at most `limit` items are returned.
+
+Errors use the `application/problem+json` format:
+
+- `400` - invalid request, with an `errors` list of `{field, message}`
+- `502` - OpenAI is unavailable or failed
 
 ## Configuration
 

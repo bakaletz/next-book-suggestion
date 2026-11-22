@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OpenAiRecommendationClientTest {
 
@@ -55,7 +56,7 @@ class OpenAiRecommendationClientTest {
 
         assertThat(sentPrompt.get().getSystemMessage().getText()).isEqualTo("""
                 You are a book recommendation assistant.
-                Recommend books the user has not read yet, based on the books they finished recently.
+                Recommend popular, widely read books that match the reading preferences shown by the books the user finished recently.
                 Never recommend a book from the user's list.
                 For each recommendation give the title, author, genre and a short reason.
                 """);
@@ -74,5 +75,18 @@ class OpenAiRecommendationClientTest {
 
                 Recommend 2 books.
                 """);
+    }
+
+    @Test
+    void wrapsModelFailure() {
+        IllegalStateException modelFailure = new IllegalStateException("OpenAI is unavailable");
+        ChatModel failingModel = prompt -> {
+            throw modelFailure;
+        };
+        OpenAiRecommendationClient failingClient = new OpenAiRecommendationClient(ChatClient.create(failingModel));
+
+        assertThatThrownBy(() -> failingClient.recommend(RECENT_BOOKS, 2))
+                .isInstanceOf(RecommendationUnavailableException.class)
+                .hasRootCause(modelFailure);
     }
 }

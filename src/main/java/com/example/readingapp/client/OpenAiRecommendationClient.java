@@ -15,7 +15,7 @@ public class OpenAiRecommendationClient {
 
     private static final String SYSTEM_PROMPT = """
             You are a book recommendation assistant.
-            Recommend books the user has not read yet, based on the books they finished recently.
+            Recommend popular, widely read books that match the reading preferences shown by the books the user finished recently.
             Never recommend a book from the user's list.
             For each recommendation give the title, author, genre and a short reason.
             """;
@@ -30,13 +30,17 @@ public class OpenAiRecommendationClient {
     private final ChatClient chatClient;
 
     public RecommendationResponse recommend(List<BookDto> recentBooks, int limit) {
-        return chatClient.prompt()
-                .system(SYSTEM_PROMPT)
-                .user(user -> user.text(USER_PROMPT)
-                        .param("books", formatBooks(recentBooks))
-                        .param("limit", limit))
-                .call()
-                .entity(RecommendationResponse.class);
+        try {
+            return chatClient.prompt()
+                    .system(SYSTEM_PROMPT)
+                    .user(user -> user.text(USER_PROMPT)
+                            .param("books", formatBooks(recentBooks))
+                            .param("limit", limit))
+                    .call()
+                    .entity(RecommendationResponse.class);
+        } catch (RuntimeException exception) {
+            throw new RecommendationUnavailableException(exception);
+        }
     }
 
     private static String formatBooks(List<BookDto> books) {

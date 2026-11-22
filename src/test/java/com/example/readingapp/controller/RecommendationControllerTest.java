@@ -1,5 +1,6 @@
 package com.example.readingapp.controller;
 
+import com.example.readingapp.client.RecommendationUnavailableException;
 import com.example.readingapp.dto.RecommendationDto;
 import com.example.readingapp.dto.RecommendationRequest;
 import com.example.readingapp.dto.RecommendationResponse;
@@ -99,6 +100,42 @@ class RecommendationControllerTest {
     @ValueSource(ints = {0, 11})
     void rejectsLimitOutOfRange(int limit) {
         assertBadRequest(requestBody(validBooks(5), limit));
+    }
+
+    @Test
+    void returnsFieldErrorsForInvalidRequest() {
+        List<String> books = validBooks(4);
+        books.add(book("\"title\":\"Dune\",\"author\":\"\",\"finishedTimeStamp\":\"" + VALID_TIMESTAMP + "\""));
+
+        assertThat(performPost(requestBody(books, 11)))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson()
+                .isLenientlyEqualTo("""
+                        {
+                          "status": 400,
+                          "detail": "Request validation failed",
+                          "errors": [
+                            {"field": "limit", "message": "must be less than or equal to 10"},
+                            {"field": "recentBooks[4].author", "message": "must not be blank"}
+                          ]
+                        }
+                        """);
+    }
+
+    @Test
+    void returnsBadGatewayWhenRecommendationsAreUnavailable() {
+        when(recommendationService.recommend(any(RecommendationRequest.class)))
+                .thenThrow(new RecommendationUnavailableException(new IllegalStateException("OpenAI is unavailable")));
+
+        assertThat(performPost(requestBody(validBooks(5), null)))
+                .hasStatus(HttpStatus.BAD_GATEWAY)
+                .bodyJson()
+                .isLenientlyEqualTo("""
+                        {
+                          "status": 502,
+                          "detail": "Recommendations are temporarily unavailable, please try again later"
+                        }
+                        """);
     }
 
     private void assertBadRequest(String body) {

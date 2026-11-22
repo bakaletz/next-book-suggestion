@@ -112,14 +112,35 @@ class RecommendationIntegrationTest {
     }
 
     @Test
-    void failsWhenOpenAiFails() {
+    void returnsBadGatewayWhenOpenAiFails() {
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("OpenAI is unavailable"));
 
         assertThat(performPost(SEVEN_BOOKS_REQUEST))
-                .hasFailed()
-                .failure()
-                .hasRootCauseInstanceOf(IllegalStateException.class)
-                .hasRootCauseMessage("OpenAI is unavailable");
+                .hasStatus(HttpStatus.BAD_GATEWAY)
+                .bodyJson()
+                .isLenientlyEqualTo("""
+                        {
+                          "status": 502,
+                          "detail": "Recommendations are temporarily unavailable, please try again later"
+                        }
+                        """);
+    }
+
+    @Test
+    void removesAlreadyReadBooksFromOpenAiAnswer() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(modelResponse("""
+                {"recommendations":[
+                  {"title":"Neuromancer","author":"William Gibson","genre":"Cyberpunk","reason":"Already read"},
+                  {"title":"Hyperion","author":"Dan Simmons","genre":"Science Fiction","reason":"Epic space opera like Dune"}
+                ]}
+                """));
+
+        assertThat(performPost(SEVEN_BOOKS_REQUEST))
+                .hasStatusOk()
+                .bodyJson()
+                .convertTo(RecommendationResponse.class)
+                .isEqualTo(new RecommendationResponse(List.of(
+                        new RecommendationDto("Hyperion", "Dan Simmons", "Science Fiction", "Epic space opera like Dune"))));
     }
 
     private MvcTestResult performPost(String body) {
