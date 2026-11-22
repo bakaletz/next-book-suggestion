@@ -4,7 +4,7 @@ Spring Boot web app for reading, with AI integration planned.
 
 ## Stack
 
-- Java 21, Spring Boot 4.2 (Spring MVC), Maven via wrapper (`./mvnw`, Windows: `.\mvnw.cmd`)
+- Java 21, Spring Boot 4.2 (Spring MVC)
 - Base package: `com.example.readingapp`
 - Config: `src/main/resources/application.properties`
 
@@ -17,3 +17,6 @@ Spring Boot web app for reading, with AI integration planned.
 
 - Keep dependencies minimal; add one only when a feature needs it.
 - Never commit secrets. Read API keys from environment variables.
+- Controllers only handle HTTP (mapping, validation, delegating). All business logic belongs in services.
+- No comments in code (including Javadoc). Use clear names instead.
+- Use constructor injection with `private final` fields and Lombok `@RequiredArgsConstructor`.
