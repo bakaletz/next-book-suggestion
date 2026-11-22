@@ -4,7 +4,7 @@ Spring Boot web app for reading, with AI integration planned.
 
 ## Stack
 
-- Java 21, Spring Boot 4.2 (Spring MVC)
+- Java 21, Spring Boot 4.2 (Spring MVC), Spring AI with OpenAI (`OPENAI_API_KEY` from git-ignored `.env` or environment variable)
 - Base package: `com.example.readingapp`
 - Config: `src/main/resources/application.properties`
 
